@@ -1,16 +1,25 @@
 class Tree(object):
-
+    """
+    Tree object composed by Nodes class
+    """
     def __init__(self, root):
         self.root = root
 
     def get_value_root(self):
+        """
+        get the value of the root node
+        :return:
+        """
         if not self.root:
             return self.root.value
         else:
             return None
 
     def depth(self):
-
+        """
+        get the depth of the tree
+        :return: int depth of the tree
+        """
         if not self.root:
             return 0
         elif not self.root.left and not self.root.right:
@@ -21,6 +30,10 @@ class Tree(object):
             return 1 + max(left_subtree.depth(), right_subtree.depth())
 
     def print_tree(self):
+        """
+        print the tree in matrix form
+        :return: the visualization of tree
+        """
         d = self.depth()
         q = [self.root]
         depth_count = 0
@@ -29,7 +42,8 @@ class Tree(object):
         for idx in range(d):
             row_idx = 0
             new_q = []
-            for i in range(2 ** (d - depth_count - 1) - 1):
+            num_blank = 2**(d-depth_count-1) - 1
+            for i in range(num_blank):
                 res_mat[idx][row_idx] = '|'
                 row_idx = row_idx + 1
 
@@ -49,7 +63,7 @@ class Tree(object):
                         row_idx = row_idx + 1
                 q = q[1:]
 
-            for i in range(2 ** (d - depth_count - 1) - 1):
+            for i in range(num_blank):
                 res_mat[idx][row_idx] = '|'
                 row_idx = row_idx + 1
 
@@ -66,7 +80,9 @@ class Tree(object):
 
 
 class Node(object):
-
+    """
+    Node class that has left and right leaves
+    """
     def __init__(self, value, left, right):
         self.value = value
         self.left = left
