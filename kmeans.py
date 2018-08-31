@@ -1,35 +1,42 @@
 import os
 import sys
 from pyspark import SparkContext
+import numpy as np
 
 
-def spark_matrix_multiplication(file_A, file_x):
+def k_means(file1, file2):
     """
-    perform matrix multiplication
-    :param file_A: file of matrix
-    :param file_x: file of vector
-    :return: the rdd of result vector
+    Compute the k-means clustering for specified data and centroids
+    :param file1: file that contains data points
+    :param file2: file that contains centroid points
+    :return: write final seeds to a file
     """
-    rdd_A = sc.textFile(file_A)
-    rdd_x = sc.textFile(file_x)
-    rdd_A = rdd_A.map(lambda l: [float(x) for x in l.split(',')]).cache()
-    rdd_x = rdd_x.map(lambda l: [float(x) for x in l.split(',')]).cache()
-    n_col = len(rdd_A.collect()[0])
-    rdd_A = rdd_A.map(lambda l: [(l[j], j) for j in range(n_col)])
-    rdd_x = rdd_x.map(lambda l: [(l[j], j) for j in range(n_col)])
-    rdd_A = rdd_A.zipWithIndex()
-    rdd_A = rdd_A.flatMap(lambda x: [(y[1], (x[1], y[0])) for y in x[0]])
-    rdd_x = rdd_x.flatMap(lambda l: [(x[1], x[0]) for x in l])
-    rdd_join = rdd_A.join(rdd_x)
-    rdd_prod = rdd_join.map(lambda l: (l[1][0][0], l[1][0][1]*l[1][1]))
-    res = rdd_prod.reduceByKey(lambda x,y: x+y).map(lambda x: x[1])
-    return res
+    max_iter = 100
+
+    data = sc.textFile(file1).map(lambda line: [float(x) for x in line.split(' ')]).cache()
+    centroids = sc.textFile(file2).map(lambda line: [float(x) for x in line.split(' ')]).collect()
+
+    for i in range(max_iter):
+        data_label = data.map(
+            lambda d: (np.argmin([np.linalg.norm(np.array(d) - np.array(c)) for c in centroids]), [np.array(d), 1]))
+        centroids = data_label.reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1])).sortByKey(ascending=True).map(
+            lambda x: x[1][0] / x[1][1]).collect()
+
+    res = centroids
+
+    file = open("result_centroids.txt", "w")
+    for c in res:
+        s = ''
+        for x in c:
+            s = s + str(x) + " "
+        file.write(s + "\n")
+    file.close()
+    return None
 
 
 if __name__ == '__main__':
-    sc = SparkContext(appName='Matrix')
-    file_A = sys.argv[1]
-    file_x = sys.argv[2]
-    res = spark_matrix_multiplication(file_A, file_x)
-    print(res.collect())
+    sc = SparkContext(appName='kmeans')
+    file1 = sys.argv[1]
+    file2 = sys.argv[2]
+    k_means(file1, file2)
     sc.stop()
